@@ -13,14 +13,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $end_date = $_POST['end_date'];
     $reason = $_POST['reason'];
 
-    $query = "INSERT INTO leave_requests (user_id, start_date, end_date, reason) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("isss", $user_id, $start_date, $end_date, $reason);
-
-    if ($stmt->execute()) {
-        $message = "Leave request submitted successfully!";
+    // Server-side validation
+    if (strtotime($end_date) < strtotime($start_date)) {
+        $error = "End date cannot be earlier than the start date.";
     } else {
-        $error = "Error submitting leave request.";
+        $query = "INSERT INTO leave_requests (user_id, start_date, end_date, reason) VALUES (?, ?, ?, ?)";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("isss", $user_id, $start_date, $end_date, $reason);
+
+        if ($stmt->execute()) {
+            $message = "Leave request submitted successfully!";
+        } else {
+            $error = "Error submitting leave request.";
+        }
     }
 }
 ?>
@@ -33,6 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Submit Leave Request</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script>
+        function validateDates() {
+            var startDate = new Date(document.getElementById('start_date').value);
+            var endDate = new Date(document.getElementById('end_date').value);
+            
+            if (endDate < startDate) {
+                alert("End date cannot be earlier than the start date.");
+                return false;
+            }
+            return true;
+        }
+    </script>
 </head>
 <body>
     <h1>Submit Leave Request</h1>
@@ -40,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($message)) echo "<p class='success'>$message</p>";
     if (isset($error)) echo "<p class='error'>$error</p>";
     ?>
-    <form method="POST">
+    <form method="POST" onsubmit="return validateDates()">
         <label for="start_date">Start Date:</label>
         <input type="date" id="start_date" name="start_date" required>
 
